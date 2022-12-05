@@ -15,6 +15,8 @@ def cam_pruning(A, X, cutoff):
 
     pruning_path = Path(__file__).parent / "pruning_R_files/cam_pruning.R"
     print(pruning_path)
+    print(data_csv_path)
+    print(dag_csv_path)
 
     data_np = X #np.array(X.detach().cpu().numpy())
     data_csv_path = np_to_csv(data_np, save_path)
