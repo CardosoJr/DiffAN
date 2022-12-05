@@ -10,6 +10,9 @@ import tempfile
 def cam_pruning(A, X, cutoff):
     #save_path = "."
     with tempfile.TemporaryDirectory() as save_path:
+        if not os.path.exists(save_path):
+           os.makedirs(save_path)   
+    
         pruning_path = Path(__file__).parent / "pruning_R_files/cam_pruning.R"
 
         data_np = X #np.array(X.detach().cpu().numpy())
