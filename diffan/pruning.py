@@ -8,7 +8,7 @@ from diffan.utils import np_to_csv
 import tempfile
 
 def cam_pruning(A, X, cutoff):
-    save_path = "."
+    save_path = "./tmp/"
     #with tempfile.TemporaryDirectory() as save_path:
     if not os.path.exists(save_path):
        os.makedirs(save_path)   
