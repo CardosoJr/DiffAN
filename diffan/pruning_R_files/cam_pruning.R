@@ -1,3 +1,4 @@
+print("INICIO DO SCRIPT")
 library(mgcv)
 
 source("DiffAN/diffan/pruning_R_files/train_gam.R", chdir=T)
