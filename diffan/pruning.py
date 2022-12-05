@@ -14,7 +14,7 @@ def cam_pruning(A, X, cutoff):
        os.makedirs(save_path)   
 
     pruning_path = Path(__file__).parent / "pruning_R_files/cam_pruning.R"
-    print(PATH + pruning_path)
+    print(pruning_path)
 
     data_np = X #np.array(X.detach().cpu().numpy())
     data_csv_path = np_to_csv(data_np, save_path)
