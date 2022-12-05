@@ -1,9 +1,9 @@
 print("INICIO DO SCRIPT")
 library(mgcv)
 
-source("DiffAN/diffan/pruning_R_files/train_gam.R", chdir=T)
-source("DiffAN/diffan/pruning_R_files/selGam.R", chdir=T)
-source("DiffAN/diffan/pruning_R_files/pruning.R", chdir=T)
+source("/content/DiffAN/diffan/pruning_R_files/train_gam.R", chdir=T)
+source("/content/DiffAN/diffan/pruning_R_files/selGam.R", chdir=T)
+source("/content/DiffAN/diffan/pruning_R_files/pruning.R", chdir=T)
 
 
 
