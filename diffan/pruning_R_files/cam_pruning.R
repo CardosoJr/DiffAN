@@ -2,21 +2,47 @@ library(mgcv)
 
 train_gam <-
 function(X,y,pars = list(numBasisFcts = 10))
-{
+{  
+    X_matrix <- as.matrix(X)
+    p <- dim(X_matrix)    
+
     if(!("numBasisFcts" %in% names(pars) ))
     { 
         pars$numBasisFcts = 10
-    }
-    p <- dim(as.matrix(X))
+    }   
     if(p[1]/p[2] < 3*pars$numBasisFcts)
     {
         pars$numBasisFcts <- ceiling(p[1]/(3*p[2]))
         cat("changed number of basis functions to    ", pars$numBasisFcts, "    in order to have enough samples per basis function\n")
     }
-    dat <- data.frame(as.matrix(y),as.matrix(X))
     coln <- rep("null",p[2]+1)
-    for(i in 1:(p[2]+1))
+    Ks <- rep(pars$numBasisFcts, p[2]) # DYNAMIC K VALUE
+    for (i in 1:p[2])
     {
+        nunique <- length(unique(X_matrix[,i]))
+        if (nunique < 100)
+        {
+            X_matrix[,i] <- as.factor(X_matrix[,i])
+        }
+        if (Ks[i] > nunique)
+        {
+            Ks[i] <- nunique - 1
+        }
+    }
+    y_matrix <- as.matrix(y)
+    p_y <- dim(y_matrix) 
+    for (i in 1:p_y[2])
+    {
+        nunique <- length(unique(y_matrix[,i]))
+        if (nunique < 100)
+        {
+            y_matrix[,i] <- as.factor(y_matrix[,i])
+        }
+    }   
+    
+    dat <- data.frame(y_matrix, X_matrix)
+    for(i in 1:(p[2]+1))
+    {        
         coln[i] <- paste("var",i,sep="")
     }
     colnames(dat) <- coln
@@ -25,11 +51,17 @@ function(X,y,pars = list(numBasisFcts = 10))
     {
         for(i in 2:p[2])
         {
-            labs<-paste(labs,"s(var",i,",k = ",pars$numBasisFcts,") + ",sep="")
+            labs<-paste(labs,"s(var",i,",k = ",Ks[i - 1],") + ",sep="")
         }
     }
-    labs<-paste(labs,"s(var",p[2]+1,",k = ",pars$numBasisFcts,")",sep="")
+    labs<-paste(labs,"s(var",p[2]+1,",k = ",Ks[p[2]],")",sep="")
+    print(labs)
     mod_gam <- FALSE
+    # THE PROBLEM IS HERE GAM 
+    #  "Error in smooth.construct.tp.smooth.spec(object, data, knots) :
+    # > A term has fewer unique covariate combinations than specified maximum
+    # > degrees of freedom"
+    # TRIED LOWERING THE K value but didnt work.
     try(mod_gam <- gam(formula=formula(labs), data=dat),silent = TRUE)
     if(typeof(mod_gam) == "logical")
     {
@@ -39,11 +71,19 @@ function(X,y,pars = list(numBasisFcts = 10))
         {
             for(i in 2:p[2])
             {
-                labs<-paste(labs,"s(var",i,",k = ",pars$numBasisFcts,",sp=0) + ",sep="")
+                labs<-paste(labs,"s(var",i,",k = ",Ks[i - 1],",sp=0) + ",sep="")
             }
+        }        
+        labs<-paste(labs,"s(var",p[2]+1,",k = ",Ks[p[2]],",sp=0)",sep="")
+        print(labs)
+        #mod_gam <- gam(formula=formula(labs), data=dat)
+        try(mod_gam <- gam(formula=formula(labs), data=dat), silent = TRUE) 
+        if(typeof(mod_gam) == "logical") 
+        {
+            cat("New error with gam. Returning empty list.\n")
+            return(list())
         }
-        labs<-paste(labs,"s(var",p[2]+1,",k = ",pars$numBasisFcts,",sp=0)",sep="")
-        mod_gam <- gam(formula=formula(labs), data=dat)
+        
     }
     result <- list()
     result$Yfit <- as.matrix(mod_gam$fitted.values)
@@ -60,7 +100,7 @@ function(X,y,pars = list(numBasisFcts = 10))
 
 
 selGam <-
-function(X,pars = list(cutOffPVal = 0.001, numBasisFcts = 10),output = FALSE,k)
+function(X,pars = list(cutOffPVal = 0.001, numBasisFcts = 10),output = TRUE,k)
 {
     result <- list()
     p <- dim(as.matrix(X))
@@ -68,7 +108,14 @@ function(X,pars = list(cutOffPVal = 0.001, numBasisFcts = 10),output = FALSE,k)
     {
         selVec <- rep(FALSE, p[2])
         mod_gam <- train_gam(X[,-k],as.matrix(X[,k]),pars)
-        pValVec <- summary.gam(mod_gam$model)$s.pv
+        pValVec <- 0.0
+        if (length(mod_gam) == 0) # This is to handle the error with GAM. Returning p-value vector of zeros. 
+        {
+            pValVec <- rep(0.0, length(selVec[-k]))
+        }
+        else{
+          pValVec <- summary.gam(mod_gam$model)$s.pv
+        }
         if(output)
         {
             cat("vector of p-values:", pValVec, "\n")
